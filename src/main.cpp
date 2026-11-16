@@ -9,6 +9,7 @@
 #endif
 #define WIN32_LEAN_AND_MEAN
 
+#include "resource.h"
 #include "scanner.h"
 
 #include <windows.h>
@@ -41,6 +42,7 @@ enum ControlId {
     IDC_PROGRESS_BAR = 1008,
     IDC_LISTVIEW = 1009,
     IDC_STATUS_LABEL = 1010,
+    IDC_LOGO_IMAGE = 1011,
 
     IDM_CTX_SCAN_FOLDER = 2001,
     IDM_CTX_OPEN_EXPLORER = 2002,
@@ -59,6 +61,8 @@ struct AppState {
     HWND hProgressBar = nullptr;
     HWND hListView = nullptr;
     HWND hStatusLabel = nullptr;
+    HWND hLogoImage = nullptr;
+    HBITMAP hLogoBmp = nullptr;
     HFONT hFont = nullptr;
     HFONT hBoldFont = nullptr;
 
@@ -455,8 +459,13 @@ int GetSelectedEntryIndex() {
 
 void LayoutControls(int width, int height) {
     const int margin = 10;
-    const int row1Y = 10;
+    const int logoY = 8;
+    const int logoW = 280;
+    const int logoH = 34;
+    const int row1Y = logoY + logoH + 8;
     const int ctrlH = 26;
+
+    MoveWindow(g_app.hLogoImage, margin, logoY, logoW, logoH, TRUE);
 
     const int comboW = 240;
     const int browseW = 90;
@@ -609,6 +618,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             } else {
                 g_app.hFont = static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
                 g_app.hBoldFont = g_app.hFont;
+            }
+
+            g_app.hLogoImage = CreateWindowExW(
+                0, WC_STATICW, nullptr,
+                WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
+                0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_LOGO_IMAGE), hInst, nullptr);
+            g_app.hLogoBmp = LoadBitmapW(hInst, MAKEINTRESOURCEW(IDB_APP_LOGO));
+            if (g_app.hLogoBmp) {
+                SendMessageW(g_app.hLogoImage, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(g_app.hLogoBmp));
             }
 
             g_app.hDriveCombo = CreateWindowExW(
@@ -842,6 +860,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 CloseHandle(g_app.hWorkerThread);
                 g_app.hWorkerThread = nullptr;
             }
+            if (g_app.hLogoBmp) {
+                DeleteObject(g_app.hLogoBmp);
+                g_app.hLogoBmp = nullptr;
+            }
             if (g_app.hFont && g_app.hFont != GetStockObject(DEFAULT_GUI_FONT)) {
                 DeleteObject(g_app.hFont);
             }
@@ -874,7 +896,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    wc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    wc.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_APP_ICON));
+    wc.hIconSm = static_cast<HICON>(LoadImageW(
+        hInstance, MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
+        GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0));
     wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1);
     wc.lpszClassName = kClassName;
     RegisterClassExW(&wc);

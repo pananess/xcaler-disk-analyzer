@@ -16,13 +16,13 @@ all: $(TARGET)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/main.o: src/main.cpp src/scanner.h | $(BUILD_DIR)
+$(BUILD_DIR)/main.o: src/main.cpp src/scanner.h src/resource.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/scanner.o: src/scanner.cpp src/scanner.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/resource.o: src/resource.rc src/app.manifest | $(BUILD_DIR)
+$(BUILD_DIR)/resource.o: src/resource.rc src/resource.h src/app.manifest src/app.ico src/logo.bmp | $(BUILD_DIR)
 	$(WINDRES) $< -O coff -o $@
 
 $(TARGET): $(OBJS)
